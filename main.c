@@ -13,7 +13,7 @@ void up_speed(int *saving, int *up_speed_cost, int *speed_level);
 
 void up_taste(int *saving, int *up_taste_cost, int *taste_level);
 int main(){
-
+    printf("Welcome, young boss!\n");
     // initialize variables
     int up_speed_cost = 50, up_taste_cost = 100;
     int speed_level = 0, time = 15,  taste_level = 0, price = 0, action; 
@@ -79,9 +79,12 @@ int main(){
     return 0;
 }
 
-void bg_of_game(){
-    printf("Welcome, young boss!\n");
-    printf("Chop chop, It's dawn.\n");
+void bg_of_day(){
+    // printf("Chop chop, It's dawn.\n");
+    // printf("You have %d dollars.\n", );
+    // printf("You need %d minutes to make a hotdog.\n", );
+    // printf("The price of a hotdog is $%d.\n", );
+    // printf("You have %d speed booster(s), %d price booster(s), %d area booster(s).\n", , , );
 }
 
 void bg_of_area(int *area, int *saving, int *speed_level, int *taste_level, int *time, int *price){
