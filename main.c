@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<ctype.h>
 
-void bg_of_game(); // just two printfs
+void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *price, int boosters[]); 
 
 void bg_of_area(int *area, int *saving, int *speed_level, int *taste_level, int *time, int *price);
 
@@ -20,10 +20,11 @@ int main(){
     int saving = 100; int area = 1;
     int continue_or_not = 1;
     int day_earning = 0;
+    int boosters[3] = {0 , 0, 0}; // [0] = speed, [1] = price, [2] = area
 
     //price = taste*10 + 30, time = 15-speed_level
     
-    bg_of_game();
+    bg_of_day(&saving, &speed_level, &taste_level, &time, &price, boosters);
     
     
     // operations
@@ -79,12 +80,14 @@ int main(){
     return 0;
 }
 
-void bg_of_day(){
-    // printf("Chop chop, It's dawn.\n");
-    // printf("You have %d dollars.\n", );
-    // printf("You need %d minutes to make a hotdog.\n", );
-    // printf("The price of a hotdog is $%d.\n", );
-    // printf("You have %d speed booster(s), %d price booster(s), %d area booster(s).\n", , , );
+void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *price, int boosters[]){
+    *price = *taste_level*10 + 30;
+    *time = 15 - *speed_level;
+    printf("Chop chop, It's dawn.\n");
+    printf("You have %d dollars.\n", *saving);
+    printf("You need %d minutes to make a hotdog.\n", *time);
+    printf("The price of a hotdog is $%d.\n", *price);
+    printf("You have %d speed booster(s), %d price booster(s), %d area booster(s).\n", boosters[0], boosters[1] , boosters[2] );
 }
 
 void bg_of_area(int *area, int *saving, int *speed_level, int *taste_level, int *time, int *price){
