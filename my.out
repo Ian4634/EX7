@@ -1,0 +1,115 @@
+Welcome, young boss!
+Chop chop, It's dawn.
+You have 100 dollars.
+You need 15 minutes to make a hotdog.
+The price of a hotdog is $30.
+You have 0 speed booster(s), 0 price booster(s), 0 area booster(s).
+Open/Close boosters:
+  [1] Speed booster (now close)
+  [2] Price booster (now close)
+  [3] Area  booster (now close)
+  [4] Finish
+Enter the number(s): Open/Close boosters:
+  [1] Speed booster (now open)
+  [2] Price booster (now close)
+  [3] Area  booster (now close)
+  [4] Finish
+Enter the number(s): Open/Close boosters:
+  [1] Speed booster (now close)
+  [2] Price booster (now close)
+  [3] Area  booster (now close)
+  [4] Finish
+Enter the number(s): Actions you can take for each area:
+  [1] Sell the hotdogs
+  [2] Improve your cooking speed
+      (- $50, - $100, - $200, - $400 for next four upgrades)
+  [3] Improve your hotdog flavor
+      (- $100, - $200, - $400, - $800 for next four upgrades)
+Enter the number(s): Well done, you earn $1440 today.
+Which result of the area you want to check?
+  [1] Area 1
+  [2] Area 2
+  [3] Area 3
+  [4] Area 4
+  [5] Done
+Enter the number(s): You make 12 hotdogs here!
+You earn $360!
+Which result of the area you want to check?
+  [1] Area 1
+  [2] Area 2
+  [3] Area 3
+  [4] Area 4
+  [5] Done
+Enter the number(s): Do you want to continue or exit?
+  [1] Continue
+  [2] Exit
+Enter the number(s): You get one free choice.
++---+---+---+
+| 1 | 2 | 3 |
++---+---+---+
+| 4 | 5 | 6 |
++---+---+---+
+| 7 | 8 | 9 |
++---+---+---+
+You can choose
+  [number on cell] to open (- $0)
+  [0] to continue the game
+Enter the number(s): Fortune, fortune! You get $3000!
++---+---+---+
+| 1 | 2 | 3 |
++---+---+---+
+| 4 | 5 | 6 |
++---+---+---+
+| 7 | 8 | x |
++---+---+---+
+You can choose
+  [number on cell] to open (- $500)
+  [0] to continue the game
+Enter the number(s): Chop chop, It's dawn.
+You have 4540 dollars.
+You need 15 minutes to make a hotdog.
+The price of a hotdog is $30.
+You have 0 speed booster(s), 0 price booster(s), 0 area booster(s).
+Open/Close boosters:
+  [1] Speed booster (now close)
+  [2] Price booster (now close)
+  [3] Area  booster (now close)
+  [4] Finish
+Enter the number(s): Actions you can take for each area:
+  [1] Sell the hotdogs
+  [2] Improve your cooking speed
+      (- $50, - $100, - $200, - $400 for next four upgrades)
+  [3] Improve your hotdog flavor
+      (- $100, - $200, - $400, - $800 for next four upgrades)
+Enter the number(s): Invalid input!!!!
+Actions you can take at Area 4:
+  [1] Sell the hotdogs
+  [2] Improve your cooking speed
+  [3] Improve your hotdog flavor
+Enter the number(s): Well done, you earn $360 today.
+Which result of the area you want to check?
+  [1] Area 1
+  [2] Area 2
+  [3] Area 3
+  [4] Area 4
+  [5] Done
+Enter the number(s): You glimpse the secret of wind.
+Your hands can move faster now.
+Which result of the area you want to check?
+  [1] Area 1
+  [2] Area 2
+  [3] Area 3
+  [4] Area 4
+  [5] Done
+Enter the number(s): You feel the soul of the ingredients.
+Your hotdogs are more appetizing now.
+Which result of the area you want to check?
+  [1] Area 1
+  [2] Area 2
+  [3] Area 3
+  [4] Area 4
+  [5] Done
+Enter the number(s): Do you want to continue or exit?
+  [1] Continue
+  [2] Exit
+Enter the number(s): We will miss you. Bye!
