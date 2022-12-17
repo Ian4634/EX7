@@ -1,6 +1,7 @@
 #include<stdio.h>
 #include<ctype.h>
 #include<stdlib.h>
+#include<time.h>
 // process : open/close booster --> ask actions --> result check --> continue_or_not --> lottery
 
 // 
@@ -13,13 +14,31 @@
 
 // ************可能的問題***************** 
 // 1. user check results時輸入不合法
-void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *price, int boosters[], int booster_status[]); 
+void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *price, int boosters[], int booster_status[], int *booster_slots, int len_of_booster_slots); 
+
+// 如果有舊的booster被pop，則boosters也要扣除
+void boosters_pop_relations(int *boosters, int popped);
+
+// this func sqush items together. e.g. {1,4,2} --> {1,2,4} which 4 means space
+void sort_out(int *arr, int len);
+
+// delete last booster, store new obtained booster. returns deleted booster.
+int obtain_booster(int *arr, int len, int new);
+
+// must at least one desired booster inside, 不然前面就擋掉
+void booster_slots_minus(int *booster_slots, int booster_used);
+
+int slot_len();
+
+int random1(int next_cell_picted);
 
 void bg_of_area(int *area, int *saving, int *speed_level, int *taste_level, int *time, int *price);
 
 int ask_action(int price, int up_speed_cost, int up_taste_cost, int time, int actions[]);
 
-void result_check(int results[], int results_sell[][2], int booster_status[]);
+void map_game(int *saving, int *booster_slots, int *boosters, int len_of_booster_slots);
+
+void result_check(int results[], int results_sell[][2], int booster_status[], int *saving, int *booster_slots, int *boosters, int len_of_booster_slots);
 
 void take_action(int actions[], int *saving, int *time, int *price, int *day_earning, int *up_speed_cost, int *speed_level, int *up_taste_cost, int *taste_level, int booster_status[], int results[], int results_sell[][2]);
 
@@ -32,13 +51,13 @@ void up_taste(int *saving, int *up_taste_cost, int *taste_level);
 void ask_continue(int *continue_or_not, int *free_choices);
 
 // ************* graphing funcions********************
-int graph_main(int *free_choices, int *open_cost, int *n, int *choosen_arr, int *saving, int *boosters, int *price, int *cell_num, int *prizes_left);
+int graph_main(int *free_choices, int *open_cost, int *n, int *choosen_arr, int *saving, int *boosters, int *price, int *cell_num, int *prizes_left, int *booster_slots, int len_of_booster_slots);
 
 int graph_input_validate(int input, int *n, int *choosen_arr);
 
 void choosen_arr_initialize(int *n, int *choosen_arr, int *prizes_left);
 
-int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free_choices, int *boosters, int *price, int *n, int *input, int *prizes_left);
+int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free_choices, int *boosters, int *price, int *n, int *input, int *prizes_left, int *booster_slots, int len_of_booster_slots);
 
 int digit_count(int n);                     
 
@@ -56,9 +75,11 @@ int cell_value_calculation(int cell_num);
 int main(){
     printf("Welcome, young boss!\n");
     // initialize variables
+    int len_of_booster_slots = slot_len();
+    int booster_slots[len_of_booster_slots];
     int up_speed_cost = 50, up_taste_cost = 100;
     int speed_level = 0, time = 15,  taste_level = 0, price = 0; 
-    int saving = 100;
+    int saving = 1000000;
     int continue_or_not = 1;
     int day_earning = 0;
     int boosters[3] = {0, 0, 0}; // [0] = speed, [1] = price, [2] = area
@@ -73,29 +94,35 @@ int main(){
     
     // *********************lottery variables*****************************************
     int n = 3; int prizes_left = n*n;
-    int free_choices = 0; int open_cost = 500; int *choosen_arr = malloc((n*n)*sizeof(int));
+    int free_choices = 0; int open_cost = 500; int choosen_arr[10000] = {0};
     int cell_num = 1;
-    // initialize choosen_arr
-    for (int i=0;i<n;i++){
-        choosen_arr[i] = 0;
+    printf("you have %d slots for booster storage\n", len_of_booster_slots);
+    // initialize booster_slots
+    for (int i=0;i<len_of_booster_slots;i++){
+        booster_slots[i] = 4;
     }
     //************************************************************************************
     while(continue_or_not){
         day_earning = 0; // 將每日獲利歸零
-        bg_of_day(&saving, &speed_level, &taste_level, &time, &price, boosters, booster_status);
+        bg_of_day(&saving, &speed_level, &taste_level, &time, &price, boosters, booster_status, booster_slots, len_of_booster_slots);
         ask_action(price, up_speed_cost, up_taste_cost, time, actions);
         
         // operations
         take_action(actions,&saving, &time, &price, &day_earning,&up_speed_cost, &speed_level, &up_taste_cost, &taste_level, booster_status, results, results_sell);
-        result_check(results, results_sell, booster_status);
+        result_check(results, results_sell, booster_status, &saving, booster_slots, boosters,len_of_booster_slots);
         ask_continue(&continue_or_not, &free_choices);
         if (continue_or_not == 0){
             return 0;
         }
         //************************************************************************************
         //graphing(3, &cell_num);
-        graph_main(&free_choices, &open_cost, &n, choosen_arr, &saving, &boosters[0], &price, &cell_num, &prizes_left);
+        graph_main(&free_choices, &open_cost, &n, choosen_arr, &saving, &boosters[0], &price, &cell_num, &prizes_left, booster_slots, len_of_booster_slots);
         
+        // testing 
+        printf("boosters : %d %d %d\nbooster slots: ", boosters[0], boosters[1], boosters[2]);
+        for (int i=0;i<len_of_booster_slots;i++){
+            printf("%d ", booster_slots[i]);
+        }
     }
     return 0;
 }
@@ -129,7 +156,7 @@ void ask_continue(int *continue_or_not, int *free_choices){
    
 }
 
-int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free_choices, int *boosters, int *price, int *n, int *input, int *prizes_left){
+int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free_choices, int *boosters, int *price, int *n, int *input, int *prizes_left, int *booster_slots, int len_of_booster_slots){
     // *input is cell num picked
 
     switch(prize_type){
@@ -148,7 +175,7 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
             *free_choices+=1;
             break;
         case 3: // open up
-            
+            printf("case 3\n");
             if (*input > *n){ // not first
                 int next_cell_picted = *input-*n; // 不用再減一因為不是要index
                 // 此狀態必為bad luck因為如果是使用者選到抽過的，外面graph_main就會擋下
@@ -162,7 +189,7 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
                 }
                 
                 printf("Another open on %d!\n", next_cell_picted);
-                take_action_lottery(cell_value_calculation(*input-*n), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left);              
+                take_action_lottery(random1(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left, booster_slots, len_of_booster_slots);              
             }else if(*input <= *n){ // first line
                 int next_cell_picted = (*n)*(*n-1) + *input; // 不用再減一因為不是要index
                 // 此狀態必為bad luck因為如果是使用者選到抽過的，外面graph_main就會擋下
@@ -176,7 +203,7 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
                 }
                 
                 printf("Another open on %d!\n", next_cell_picted);
-                take_action_lottery(cell_value_calculation(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left);                   
+                take_action_lottery(random1(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left, booster_slots, len_of_booster_slots);                   
             }else{
                 printf("sth unexpected in take action price type 3");
             }
@@ -184,7 +211,7 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
             //printf("Another open on %d!\n", );
             break;
         case 4: // open underneath
-            
+            printf("case 4\n");
             if (*input > (*n)*(*n - 1)){ // last line 
                 int next_cell_picted = *input % (*n); // 不用再減一因為不是要index
                 // 此狀態必為bad luck因為如果是使用者選到抽過的，外面graph_main就會擋下
@@ -198,7 +225,7 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
                 }
                 
                 printf("Another open on %d!\n", next_cell_picted);
-                take_action_lottery(cell_value_calculation(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left); 
+                take_action_lottery(random1(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left, booster_slots, len_of_booster_slots); 
             }else{
                 int next_cell_picted = *input + *n; // 不用再減一因為不是要index
                 // 此狀態必為bad luck因為如果是使用者選到抽過的，外面graph_main就會擋下
@@ -212,10 +239,11 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
                 }
                 
                 printf("Another open on %d!\n", next_cell_picted);
-                take_action_lottery(cell_value_calculation(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left); 
+                take_action_lottery(random1(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left, booster_slots, len_of_booster_slots); 
             }
             break;
         case 5: // open left
+            printf("case 5\n");
             if (*input % *n == 1){ // left most column
                 int next_cell_picted = *input+ (*n-1); // 不用再減一因為不是要index
                 
@@ -226,12 +254,11 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
                 // 此狀態必為bad luck因為如果是使用者選到抽過的，外面graph_main就會擋下
                 if (graph_input_validate(next_cell_picted, n, choosen_arr) == 3){
                     // prize type 3 ~ 6 failed
-                    printf("Bad Luck :(\n");
                     return 0;
                 }
                 
                 printf("Another open on %d!\n", next_cell_picted);
-                take_action_lottery(cell_value_calculation(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left);        
+                take_action_lottery(random1(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left, booster_slots, len_of_booster_slots);        
             }else{
                 int next_cell_picted = *input - 1; // 不用再減一因為不是要index
                 
@@ -246,10 +273,11 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
                 }
                 
                 printf("Another open on %d!\n", next_cell_picted);
-                take_action_lottery(cell_value_calculation(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left);        
+                take_action_lottery(random1(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left, booster_slots, len_of_booster_slots);        
             }
             break;
         case 6: // open right
+            printf("case 6\n");
             if(*input % *n == 0){ // right most column
                 int next_cell_picted = *input - (*n-1); // 不用再減一因為不是要index
                 
@@ -264,7 +292,7 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
                 }
                 
                 printf("Another open on %d!\n", next_cell_picted);
-                take_action_lottery(cell_value_calculation(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left);
+                take_action_lottery(random1(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left, booster_slots, len_of_booster_slots);
             }else{
                 int next_cell_picted = *input+1; // 不用再減一因為不是要index
                 
@@ -280,32 +308,42 @@ int take_action_lottery(int prize_type, int *saving, int *choosen_arr, int *free
                 }
                 
                 printf("Another open on %d!\n", next_cell_picted);
-                take_action_lottery(cell_value_calculation(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left);
+                take_action_lottery(random1(next_cell_picted), saving, choosen_arr, free_choices, boosters, price, n, &next_cell_picted, prizes_left, booster_slots, len_of_booster_slots);
             }
             break;
         case 7:
             choosen_arr[*input-1] = 1; // 紀錄抽過的
             boosters[0] += 1;
             (*prizes_left)--; // 紀錄剩餘獎數量 
+            // **********************處理boosters中如果有被pop
+            boosters_pop_relations(boosters, obtain_booster(booster_slots, len_of_booster_slots, 0));
+            
             printf("You get a booster!!\n");
             break;
         case 8:
             choosen_arr[*input-1] = 1; // 紀錄抽過的
             boosters[1] += 1;
             (*prizes_left)--; // 紀錄剩餘獎數量 
+            
+            // **********************處理boosters中如果有被pop
+            boosters_pop_relations(boosters, obtain_booster(booster_slots, len_of_booster_slots, 1));
+            
             printf("You get a booster!!\n");
             break;
         case 9:
             choosen_arr[*input-1] = 1; // 紀錄抽過的
             boosters[2] += 1;
             (*prizes_left)--; // 紀錄剩餘獎數量 
+            
+            // **********************處理boosters中如果有被pop，boosters也要扣
+            boosters_pop_relations(boosters, obtain_booster(booster_slots, len_of_booster_slots, 2));
             printf("You get a booster!!\n");
             break;
     }
     return 0;
 }
 
-int graph_main(int *free_choices, int *open_cost, int *n, int *choosen_arr, int *saving, int *boosters, int *price, int *cell_num, int *prizes_left){
+int graph_main(int *free_choices, int *open_cost, int *n, int *choosen_arr, int *saving, int *boosters, int *price, int *cell_num, int *prizes_left, int *booster_slots, int len_of_booster_slots){
     
     int flag = 1;
     while(flag){
@@ -315,10 +353,11 @@ int graph_main(int *free_choices, int *open_cost, int *n, int *choosen_arr, int 
             *n += 2;
             *prizes_left = (*n) * (*n);
             *open_cost = 500;
-            free(choosen_arr);
-            choosen_arr = malloc(((*n)*(*n))*sizeof(int));
+            //free(choosen_arr);
+            //choosen_arr = malloc(((*n)*(*n))*sizeof(int));
             choosen_arr_initialize(n, choosen_arr, prizes_left);
         }
+        
         *cell_num = 1;
         graphing(*n, cell_num, choosen_arr);
         printf("You can choose\n");
@@ -348,7 +387,7 @@ int graph_main(int *free_choices, int *open_cost, int *n, int *choosen_arr, int 
                     *open_cost += 500;
                 }
                 //choosen_arr[input-1] = 1;
-                take_action_lottery(cell_value_calculation(input), saving, choosen_arr, free_choices, boosters, price, n, &input, prizes_left);
+                take_action_lottery(random1(input), saving, choosen_arr, free_choices, boosters, price, n, &input, prizes_left, booster_slots, len_of_booster_slots);
                 //printf("free choices %d\n", *free_choices);
                 break;
             case 2: // choose to 不抽繼續玩
@@ -360,6 +399,7 @@ int graph_main(int *free_choices, int *open_cost, int *n, int *choosen_arr, int 
                 break;
         }
     }
+    
     return 0;
 }
 
@@ -376,16 +416,17 @@ int graph_input_validate(int input, int *n, int *choosen_arr){
 
 // 確認是否有需要initialize, 無則跳過
 void choosen_arr_initialize(int *n, int *choosen_arr, int *prizes_left){
-    
-    if (prizes_left == 0){
-        for (int i=0;i<(*n)*(*n);i++){
+
+    for (int i=0;i<(*n)*(*n);i++){
             choosen_arr[i] = 0;
-            printf("time to reset choosen_arr\n");
         }
-    }
+    // if (*prizes_left == 0){
+    //     printf("reinitial called\n");
+        
+    // }
 }
 
-void result_check(int results[], int results_sell[][2], int booster_status[]){
+void result_check(int results[], int results_sell[][2], int booster_status[], int *saving, int *booster_slots, int *boosters, int len_of_booster_slots){
     int input;
     
     // Opeartions 取出他要求的並印出
@@ -405,6 +446,9 @@ void result_check(int results[], int results_sell[][2], int booster_status[]){
         printf("Enter the number(s): ");
         scanf("%d", &input);
         if ((booster_status[2] == 1 && input == 6) || (booster_status[2] == 0 && input == 5)){break;}
+        
+        map_game(saving, booster_slots, boosters, len_of_booster_slots);
+        
         // operattion: 根據要求列印答案
         switch(results[input-1]){ // results[input-1] 是該區的action
             case 1:
@@ -442,7 +486,7 @@ void result_check(int results[], int results_sell[][2], int booster_status[]){
     
 }
 
-void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *price, int boosters[], int booster_status[]){
+void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *price, int boosters[], int booster_status[], int *booster_slots, int len_of_booster_slots){
     *price = *taste_level*10 + 30;
     *time = 15 - *speed_level;
     printf("Chop chop, It's dawn.\n");
@@ -495,6 +539,8 @@ void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *
         booster_status[0] = 0;
     }else if(booster_status[0] == 1 && boosters[0] >= 1){ // 開，且有足夠booster。
         boosters[0] -= 1;
+        booster_slots_minus(booster_slots, 0); // 進去booster_slots，刪一個speed
+        sort_out(booster_slots, len_of_booster_slots);
     }else if(booster_status[0] == 0){
         
     }else{
@@ -506,6 +552,8 @@ void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *
         booster_status[1] = 0;
     }else if (booster_status[1] == 1 && booster_status[1] >= 1){
         boosters[1] -= 1;
+        booster_slots_minus(booster_slots, 1); // 進去booster_slots，刪一個taste
+        sort_out(booster_slots, len_of_booster_slots);
     }else if(booster_status[1] == 0){
         
     }else{
@@ -517,6 +565,8 @@ void bg_of_day(int *saving, int *speed_level, int *taste_level, int *time, int *
         booster_status[2] = 0;
     }else if(booster_status[2] == 1 && boosters[2] >= 1){
         boosters[2] -= 1;
+        booster_slots_minus(booster_slots, 2); // 進去booster_slots，刪一個area
+        sort_out(booster_slots, len_of_booster_slots);
     }else if(booster_status[2] == 0){
         
     }else{
@@ -559,12 +609,16 @@ int ask_action(int price, int up_speed_cost, int up_taste_cost, int time, int ac
 
 void sell(int *saving,int *time, int price, int *day_earning, int booster_status[]){
     
-    if (booster_status[0] == 1 ){ // speed booster open
+    if (booster_status[0] == 1 && booster_status[1] == 0){ // speed booster on taste off
         int profit = (180/ *time)*2*price; // 
         *saving += profit;
         *day_earning += profit;
-    }else if(booster_status[1] == 1){ // taste booster on
+    }else if(booster_status[1] == 1){ // taste booster on speed off
         int profit = (180/ *time)*2*price; 
+        *saving += profit;
+        *day_earning += profit;
+    }else if(booster_status[0] == 1 && booster_status[1] == 1){ // both open
+        int profit = (180/ *time)*4*price; // 
         *saving += profit;
         *day_earning += profit;
     }else{ // no booster
@@ -597,17 +651,23 @@ void take_action(int actions[], int *saving, int *time, int *price, int *day_ear
             sell(saving, time, *price, day_earning, booster_status);
             results[i] = 5; // 採取的行動
             
-            if (booster_status[0] == 1){ // speed booster open
+            if (booster_status[0] == 1 && booster_status[1] == 0){ // speed booster open
                 
                 int profit = (180/ *time)*2* (*price); // 暫存，為了存到results.
                 results_sell[i][0] = (180/ *time)*2; // 在本區賣的熱狗數
                 results_sell[i][1] = profit; // 在本區賺的錢
                 
-            }else if(booster_status[1] == 1){ // taste booster open
+            }else if(booster_status[1] == 1 && booster_status[0] == 0){ // taste booster open
                 
                 int profit = (180/ *time)*(*price)*2; // 暫存，為了存到results.
                 results_sell[i][0] = (180/ *time); // 在本區賣的熱狗數
                 results_sell[i][1] = profit; // 在本區賺的錢    
+                
+            }else if(booster_status[1] == 1 && booster_status[0] == 1){
+                
+                int profit = (180/ *time)*(*price)*4; // 暫存，為了存到results.
+                results_sell[i][0] = (180/ *time); // 在本區賣的熱狗數
+                results_sell[i][1] = profit; // 在本區賺的錢 
                 
             }else{                              // no booster open
             
@@ -625,6 +685,30 @@ void take_action(int actions[], int *saving, int *time, int *price, int *day_ear
                 // 沒錢升級
                 sell(saving, time, *price, day_earning, booster_status);
                 results[i] = 1; // 採取的行動
+                if (booster_status[0] == 1 && booster_status[1] == 0){ // speed booster open
+                
+                int profit = (180/ *time)*2* (*price); // 暫存，為了存到results.
+                results_sell[i][0] = (180/ *time)*2; // 在本區賣的熱狗數
+                results_sell[i][1] = profit; // 在本區賺的錢
+                
+                }else if(booster_status[1] == 1 && booster_status[0] == 0){ // taste booster open
+                    
+                    int profit = (180/ *time)*(*price)*2; // 暫存，為了存到results.
+                    results_sell[i][0] = (180/ *time); // 在本區賣的熱狗數
+                    results_sell[i][1] = profit; // 在本區賺的錢    
+                    
+                }else if(booster_status[1] == 1 && booster_status[0] == 1){
+                    
+                    int profit = (180/ *time)*(*price)*4; // 暫存，為了存到results.
+                    results_sell[i][0] = (180/ *time); // 在本區賣的熱狗數
+                    results_sell[i][1] = profit; // 在本區賺的錢 
+                    
+                }else{                              // no booster open
+                
+                    int profit = (180/ *time)*(*price); // 暫存，為了存到results.
+                    results_sell[i][0] = (180/ *time); // 在本區賣的熱狗數
+                    results_sell[i][1] = profit; // 在本區賺的錢 
+                }
             }else{
                 // 不能在快
                 sell(saving, time, *price, day_earning, booster_status);
@@ -640,6 +724,30 @@ void take_action(int actions[], int *saving, int *time, int *price, int *day_ear
                 // 沒錢升級
                 sell(saving, time, *price, day_earning, booster_status);
                 results[i] = 1; // 採取的行動
+                if (booster_status[0] == 1 && booster_status[1] == 0){ // speed booster open
+                
+                int profit = (180/ *time)*2* (*price); // 暫存，為了存到results.
+                results_sell[i][0] = (180/ *time)*2; // 在本區賣的熱狗數
+                results_sell[i][1] = profit; // 在本區賺的錢
+                
+                }else if(booster_status[1] == 1 && booster_status[0] == 0){ // taste booster open
+                    
+                    int profit = (180/ *time)*(*price)*2; // 暫存，為了存到results.
+                    results_sell[i][0] = (180/ *time); // 在本區賣的熱狗數
+                    results_sell[i][1] = profit; // 在本區賺的錢    
+                    
+                }else if(booster_status[1] == 1 && booster_status[0] == 1){
+                    
+                    int profit = (180/ *time)*(*price)*4; // 暫存，為了存到results.
+                    results_sell[i][0] = (180/ *time)*2; // 在本區賣的熱狗數
+                    results_sell[i][1] = profit; // 在本區賺的錢 
+                    
+                }else{                              // no booster open
+                
+                    int profit = (180/ *time)*(*price); // 暫存，為了存到results.
+                    results_sell[i][0] = (180/ *time); // 在本區賣的熱狗數
+                    results_sell[i][1] = profit; // 在本區賺的錢 
+                }
             }
         }
     }
@@ -647,22 +755,29 @@ void take_action(int actions[], int *saving, int *time, int *price, int *day_ear
     if (booster_status[2] == 1){ // area booster open
         sell(saving, time, *price, day_earning, booster_status);        
         
-        if (booster_status[0] == 1 || booster_status[1] == 1){
-            if (booster_status[0] == 1 && booster_status[1] == 0){
-                int profit = (180/ *time)*(*price)*2; // 暫存，為了存到results.
-                results_sell[4][0] = (180/ *time)*2; // 在本區賣的熱狗數
-                results_sell[4][1] = profit; // 在本區賺的錢 
-            }else if(booster_status[0] == 0 && booster_status[1] == 1){
-                int profit = (180/ *time)*(*price)*2; // 暫存，為了存到results.
-                results_sell[4][0] = (180/ *time); // 在本區賣的熱狗數
-                results_sell[4][1] = profit; // 在本區賺的錢
-            }else if(booster_status[0] == 1 && booster_status[1] == 1){
-                int profit = (180/ *time)*(*price)*4; // 暫存，為了存到results.
-                results_sell[4][0] = (180/ *time)*2; // 在本區賣的熱狗數
-                results_sell[4][1] = profit; // 在本區賺的錢
-            }else{
-                printf("unexpected result in area 5 sell\n");
-            }
+        if (booster_status[0] == 1 && booster_status[1] == 0){ // speed booster open
+                
+        int profit = (180/ *time)*2* (*price); // 暫存，為了存到results.
+        results_sell[4][0] = (180/ *time)*2; // 在本區賣的熱狗數
+        results_sell[4][1] = profit; // 在本區賺的錢
+        
+        }else if(booster_status[1] == 1 && booster_status[0] == 0){ // taste booster open
+            
+            int profit = (180/ *time)*(*price)*2; // 暫存，為了存到results.
+            results_sell[4][0] = (180/ *time); // 在本區賣的熱狗數
+            results_sell[4][1] = profit; // 在本區賺的錢    
+            
+        }else if(booster_status[1] == 1 && booster_status[0] == 1){
+            
+            int profit = (180/ *time)*(*price)*4; // 暫存，為了存到results.
+            results_sell[4][0] = (180/ *time)*2; // 在本區賣的熱狗數
+            results_sell[4][1] = profit; // 在本區賺的錢 
+            
+        }else{                              // no booster open
+        
+            int profit = (180/ *time)*(*price); // 暫存，為了存到results.
+            results_sell[4][0] = (180/ *time); // 在本區賣的熱狗數
+            results_sell[4][1] = profit; // 在本區賺的錢 
         }
         results[4] = 5;
         
@@ -803,28 +918,203 @@ int cell_value_calculation(int cell_num){
 }
 
 
+int random1(int next_cell_picted){
+    srand(next_cell_picted);
+    return (rand()%9)+1;
+}
 
+int slot_len(){
+    srand(time(0));
+    return (rand() % 11)+5;
+}
 
+// delete last booster, store new obtained booster.
+int obtain_booster(int *arr, int len, int new){
+    int temp;
+    int popped = arr[len-1];
+    for (int i=len;i>=2;i--){
+        arr[i-1] = arr[i-2];
+    }
+    *arr = new;
+    printf("arr[0]:%d arr[1]:%d arr[2]:%d\n", arr[0], arr[1], arr[2]);
+    return popped;
+}
 
+void sort_out(int *arr, int len){
+    for (int i=len-1;i>=1;i--){
+        if (arr[i-1] == 4){
+            for (int a = i-1; a<=len-2;a++){
+                arr[a] = arr[a+1];
+            }   
+            arr[len-1] = 4; // moved forward so the last becomes nothing
+        }
+    }
+}
 
+void boosters_pop_relations(int *boosters, int popped){
+    switch(popped){
+        case 0:
+            boosters[0]--;
+            break;
+        case 1:
+            boosters[1]--;
+            break;
+        case 2:
+            boosters[2]--;
+            break;
+        case 3:
+            break;
+    }
+}
 
+// must at least one desired booster inside, 不然前面就擋掉
+void booster_slots_minus(int *booster_slots, int booster_used){
+    int flag = 1;int index = 0;
+    while (flag){
+        if (booster_slots[index] == booster_used){
+            booster_slots[index] = 4; // delete it
+            flag = 0;
+        }
+        index++;
+        
+    }
+}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+void map_game(int *saving, int *booster_slots, int *boosters, int len_of_booster_slots ){
+    int check_money(int *saving){
+        if (*saving >= 25){
+            return 1;
+        }else{
+            return 0;
+        }
+    }
+    srand(time(0));
+    int position = 0, money, booster;
+    money = rand() % 63 + 1;
+    booster = rand() % 63 + 1;
+    
+    // make sure M and B are not at same location
+    if(money == booster){
+        booster = rand() % 63 + 1;
+    }
+    
+    int map[64] = {0}; // if 1, print P, 2 print M, 3 print B
+    int input = 8;
+    printf("M:%d B:%d\n", money, booster);
+    printf("map called\n");
+    while (input!=5){
+        
+        // show map
+        for (int i=0;i<64;i++){
+            if((i%8) != 7 ){ // not yet end of row
+                if (i!=position && i!= money && i!= booster){
+                    printf(". ");
+                }else if(i == position){
+                    printf("P ");
+                }else if(i == money){
+                    printf("M ");
+                }else if(i == booster){
+                    printf("B ");
+                }else{
+                    printf("sth weird");
+                }
+            }else{
+                if (i!=position && i!= money && i!= booster){
+                    printf(".\n");
+                }else if(i == position){
+                    printf("P\n");
+                }else if(i == money){
+                    printf("M\n");
+                }else if(i == booster){
+                    printf("B\n");
+                }else{
+                    printf("sth weird");
+                }
+            }
+        }
+        
+        printf("\n[1] to move up\n[2] to move down\n[3] to move left\n[4] to move right\n[5] to leave map\n");
+        printf("Your move: ");
+        scanf("%d", &input);
+        // perform actions
+        
+        
+        switch(input){
+            case 1:
+                // check enough money
+                if(check_money(saving) && position >= 8){ // valid
+                    position -= 8;
+                    *saving -= 25;
+                }else if(check_money(saving) == 0){ // lack of money
+                    printf("You are too poor\n");
+                }else if(position < 8){
+                    printf("out of boundary\n");
+                }else {
+                    printf("unexpected in case 1");
+                }
+                break;
+            case 2:
+                // check enough money
+                if(check_money(saving) && position <= 55){ // valid
+                    position += 8;
+                    *saving -= 25;
+                }else if(check_money(saving) == 0){ // lack of money
+                    printf("You are too poor\n");
+                }else if(position > 55){
+                    printf("out of boundary\n");
+                }else {
+                    printf("unexpected in case 1");
+                }
+                break;
+            case 3:
+                // check enough money
+                if(check_money(saving) && (position % 8) != 0){ // valid
+                    position -= 1;
+                    *saving -= 25;
+                }else if(check_money(saving) == 0){ // lack of money
+                    printf("You are too poor\n");
+                }else if((position % 8) == 0){
+                    printf("out of boundary\n");
+                }else {
+                    printf("unexpected in case 1");
+                }
+                break;
+            case 4:
+                // check enough money
+                if(check_money(saving) && (position % 8) != 7){ // valid
+                    position += 1;
+                    *saving -= 25;
+                }else if(check_money(saving) == 0){ // lack of money
+                    printf("You are too poor\n");
+                }else if((position % 8) == 7){
+                    printf("out of boundary\n");
+                }else {
+                    printf("unexpected in case 1");
+                }
+                break;
+        }
+        
+        // check if M and B are picked up
+        if (position == money){
+            // row number = (position / 8) + 1 column num = position % 8
+            int row_num = (position / 8) + 1;
+            int column_num = position % 8;
+            *saving += row_num*column_num*10;
+            printf("You have won $%d\n", row_num*column_num*10);
+            money = 65; // just put it out of map
+        }
+        
+        if (position == booster){
+            printf("You have won a booster\n");
+            int prize_type = (rand()%3);
+            boosters[prize_type] += 1;
+            boosters_pop_relations(boosters, obtain_booster(booster_slots, len_of_booster_slots, prize_type));
+            booster = 66;
+        }
+        
+        printf("you still have %d\n", *saving);
+    }
+    
+}
 
 
